@@ -2,13 +2,12 @@ Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
     _artifacts:[],
-    //_artifactsWithRevs:[],
     launch: function() {
         var today = new Date().toISOString();
         var that = this;
         var artifacts = Ext.create('Rally.data.wsapi.Store', {
             model: 'UserStory',
-            fetch: ['ObjectID', 'FormattedID','Name','ScheduleState','RevisionHistory','Revisions','Description','CreationDate','User'],
+            fetch: ['ObjectID', 'FormattedID','Name','RevisionHistory','Revisions','Description','User'],
             autoLoad: true,
             filters: [
                 {
@@ -40,21 +39,21 @@ Ext.define('CustomApp', {
                 that._makeGrid(results);
             },
             failure: function(){
-                console.log("oh noes!")
+                console.log("oh noes!");
             }
         });
     },
     _getRevHistoryModel:function(artifacts){
         this._artifacts = artifacts;
         return Rally.data.ModelFactory.getModel({
-            type: 'RevisionHistory',
+            type: 'RevisionHistory'
         });
     },
   _onRevHistoryModelCreated: function(model) {
     var that = this;
     var promises = [];
     _.each(this._artifacts, function(artifact){
-      var ref = artifact.get('RevisionHistory')._ref
+      var ref = artifact.get('RevisionHistory')._ref;
       console.log(artifact.get('FormattedID'), ref);
         promises.push(model.load(Rally.util.Ref.getOidFromRef(ref)));
     }); 
@@ -62,27 +61,23 @@ Ext.define('CustomApp', {
    },
     
     _onModelLoaded: function(histories) {
-      console.log('histories', histories);
       var promises = [];
       _.each(histories, function(history){
         var revisions = history.get('Revisions');
         revisions.store = history.getCollection('Revisions',{fetch:['User','Description','CreationDate', 'RevisionNumber']});
         promises.push(revisions.store.load());
-      })
+      });
       return Deft.Promise.all(promises);  
     },
     _stitchDataTogether:function(revhistories){
       var that = this;
       var artifactsWithRevs = [];
-      console.log(this._artifacts);
-      console.log(revhistories);
       _.each(that._artifacts, function(artifact){
-        artifactsWithRevs.push({artifact: artifact.data})
-        
+        artifactsWithRevs.push({artifact: artifact.data});
       });
       var i = 0;
       _.each(revhistories, function(revisions){
-        artifactsWithRevs[i].revisions = revisions
+        artifactsWithRevs[i].revisions = revisions;
         i++;
       });
       return artifactsWithRevs;
@@ -94,11 +89,11 @@ Ext.define('CustomApp', {
 
         this.add({
             xtype: 'rallygrid',
-            showPagingToolbar: false,
+            showPagingToolbar: true,
             showRowActionsColumn: false,
             editable: false,
             store: Ext.create('Rally.data.custom.Store', {
-                data: artifactsWithRevs,
+                data: artifactsWithRevs
             }),
             columnCfgs: [
                 {
@@ -110,15 +105,25 @@ Ext.define('CustomApp', {
                 {
                     text: 'Name',dataIndex: 'artifact',
                     renderer:function(value){
-                        return value.Name
+                        return value.Name;
                     }
                 },
-                 {
-                    text: 'User',dataIndex: 'revisions', flex:1,
+                {
+                    text: 'Revision author',dataIndex: 'revisions',
                     renderer:function(value){
                         var html = [];
                         _.each(value, function(rev){
-                            html.push(rev.data.RevisionNumber + " " + rev.data.User._refObjectName + " " + rev.data.Description);
+                            html.push(rev.data.User._refObjectName);
+                        });
+                        return html.join('</br></br>');
+                    }
+                },
+                {
+                    text: 'Revision # and description',dataIndex: 'revisions', flex:1,
+                    renderer:function(value){
+                        var html = [];
+                        _.each(value, function(rev){
+                            html.push(rev.data.RevisionNumber + " " + rev.data.Description);
                         });
                         return html.join('</br></br>');
                     }
