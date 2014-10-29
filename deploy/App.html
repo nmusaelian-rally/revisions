@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Revisions by User</title>
+
+    <script type="text/javascript" src="/apps/2.0rc3/sdk.js"></script>
+
+    <script type="text/javascript">
+        Rally.onReady(function () {
+                Ext.define("CustomApp",{extend:"Rally.app.App",componentCls:"app",_artifacts:[],launch:function(){var today=(new Date).toISOString(),that=this,artifacts=Ext.create("Rally.data.wsapi.Store",{model:"UserStory",fetch:["ObjectID","FormattedID","Name","ScheduleState","RevisionHistory","Revisions","Description","CreationDate","User"],autoLoad:!0,filters:[{property:"Iteration.StartDate",operator:"<=",value:today},{property:"Iteration.EndDate",operator:">=",value:today}]});artifacts.load().then({success:this._getRevHistoryModel,scope:this}).then({success:this._onRevHistoryModelCreated,scope:this}).then({success:this._onModelLoaded,scope:this}).then({success:this._stitchDataTogether,scope:this}).then({success:function(results){that._makeGrid(results)},failure:function(){console.log("oh noes!")}})},_getRevHistoryModel:function(artifacts){return this._artifacts=artifacts,Rally.data.ModelFactory.getModel({type:"RevisionHistory"})},_onRevHistoryModelCreated:function(model){var that=this,promises=[];return _.each(this._artifacts,function(artifact){var ref=artifact.get("RevisionHistory")._ref;console.log(artifact.get("FormattedID"),ref),promises.push(model.load(Rally.util.Ref.getOidFromRef(ref)))}),Deft.Promise.all(promises)},_onModelLoaded:function(histories){console.log("histories",histories);var promises=[];return _.each(histories,function(history){var revisions=history.get("Revisions");revisions.store=history.getCollection("Revisions",{fetch:["User","Description","CreationDate","RevisionNumber"]}),promises.push(revisions.store.load())}),Deft.Promise.all(promises)},_stitchDataTogether:function(revhistories){var that=this,artifactsWithRevs=[];console.log(this._artifacts),console.log(revhistories),_.each(that._artifacts,function(artifact){artifactsWithRevs.push({artifact:artifact.data})});var i=0;return _.each(revhistories,function(revisions){artifactsWithRevs[i].revisions=revisions,i++}),artifactsWithRevs},_makeGrid:function(artifactsWithRevs){console.log(artifactsWithRevs),this.add({xtype:"rallygrid",showPagingToolbar:!1,showRowActionsColumn:!1,editable:!1,store:Ext.create("Rally.data.custom.Store",{data:artifactsWithRevs}),columnCfgs:[{text:"FormattedID",dataIndex:"artifact",renderer:function(value){return'<a href="https://rally1.rallydev.com/#/detail/userstory/'+value.ObjectID+'" target="_blank">'+value.FormattedID+"</a>"}},{text:"Name",dataIndex:"artifact",renderer:function(value){return value.Name}},{text:"User",dataIndex:"revisions",flex:1,renderer:function(value){var html=[];return _.each(value,function(rev){html.push(rev.data.RevisionNumber+" "+rev.data.User._refObjectName+" "+rev.data.Description)}),html.join("</br></br>")}}]})}});
+
+            Rally.launchApp('CustomApp', {
+                name:"Revisions by User",
+	            parentRepos:""
+            });
+
+        });
+    </script>
+
+
+    <style type="text/css">
+        
+    </style>
+</head>
+<body>
+</body>
+</html>

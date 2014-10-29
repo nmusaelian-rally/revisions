@@ -1,4 +1,13 @@
-Ext.define('CustomApp', {
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Revisions by User</title>
+
+    <script type="text/javascript" src="/apps/2.0rc3/sdk.js"></script>
+
+    <script type="text/javascript">
+        Rally.onReady(function () {
+                Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
     _artifacts:[],
@@ -130,3 +139,24 @@ Ext.define('CustomApp', {
     
 });
 
+
+
+            Rally.launchApp('CustomApp', {
+                name:"Revisions by User",
+	            parentRepos:""
+            });
+
+        });
+    </script>
+
+
+    <style type="text/css">
+        .app {
+  /* Add app styles here */
+}
+
+    </style>
+</head>
+<body>
+</body>
+</html>
